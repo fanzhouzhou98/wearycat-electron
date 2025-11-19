@@ -30,4 +30,5 @@ export const INITIAL_DATA = {
   address: '',
   startDateAndEndDate: undefined,
   name: '',
+  idNumber:''
 };
