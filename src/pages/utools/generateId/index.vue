@@ -14,6 +14,9 @@
           <t-form-item v-if="formData.idType === '1'" label="省市区" name="area">
             <t-cascader :options="areaOptions" v-model="formData.area" />
           </t-form-item>
+          <t-form-item label="证件号" name="idNumber">
+            <t-input v-model="formData.idNumber" placeholder="请输入证件号最多30字符" :maxcharacter="60"></t-input>
+          </t-form-item>
           <t-form-item label="出生日期" name="birthday">
             <t-date-picker v-model="formData.birthday" />
           </t-form-item>
@@ -179,7 +182,7 @@ const generateID = (birthday: string, sex: string) => {
 const generate = () => {
   idList.value = [];
   for (let i = 0; i < 5; i++) {
-    const foreignID = formData.value.idType === '1' ? generateID(formData.value.birthday, formData.value.gender) : generateForeignID(formData.value.birthday, formData.value.gender);
+    const foreignID = formData.value.idNumber ? formData.value.idNumber : (formData.value.idType === '1' ? generateID(formData.value.birthday, formData.value.gender) : generateForeignID(formData.value.birthday, formData.value.gender));
     //@ts-ignore
     idList.value.push(foreignID);
   }

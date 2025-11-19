@@ -8,6 +8,7 @@ export const FORM_RULES: Record<string, FormRule[]> = {
   address: [{ required: false, message: '请输入详细地址', type: 'error' }],
   startDateAndEndDate: [{ required: false, message: '请选择有效期', type: 'error' }],
   name: [{ required: false, message: '请输入姓名', type: 'error' }],
+  idNumber: [{ required: false, message: '请输入证件号', type: 'error' }],
 };
 
 export const ID_TYPE_OPTIONS = [
