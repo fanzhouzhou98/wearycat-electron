@@ -125,41 +125,37 @@ fs.promises.readdir(path.join(process.env.VITE_PUBLIC, 'rrwebPlayer'))
   ipcMain.handle('download:array-to-js-zip', async (event, { arrayData, variableName, fileName, savePath }) => {
     return new Promise((resolve, reject) => {
       try {
-        // 创建临时目录
-        const tempDir1 = path.join(process.env.VITE_PUBLIC, 'rrwebPlayer');
-        const tempDir = path.join(tempDir1, 'js');
-        // const tempDir = path.join(__dirname, 'temp');
+        // 获取rrwebPlayer目录路径
+        const rrwebPlayerDir = path.join(process.env.VITE_PUBLIC, 'rrwebPlayer');
+        const jsDir = path.join(rrwebPlayerDir, 'js');
 
-        if (!fs.existsSync(tempDir)) {
-          fs.mkdirSync(tempDir);
+        // 确保js目录存在
+        if (!fs.existsSync(jsDir)) {
+          fs.mkdirSync(jsDir, { recursive: true });
         }
-      console.log('tempDir1, tempDir=====>',tempDir1, tempDir);
+        
         // 生成JS文件内容
         const jsContent = `var ${variableName} = ${JSON.stringify(arrayData, null, 2)};`;
         
-        // 创建JS文件
-        const jsFilePath = path.join(tempDir, fileName);
+        // 创建JS文件到public/rrwebPlayer/js目录下
+        const jsFilePath = path.join(jsDir, fileName);
         fs.writeFileSync(jsFilePath, jsContent, 'utf8');
         
-        // 创建压缩包
-        const zipPath = path.join(tempDir1, `${path.parse(fileName).name}.zip`);
-        const output = fs.createWriteStream(zipPath);
-        const archive = archiver('zip', {
+        // 创建压缩包，将整个rrwebPlayer目录压缩
+        const output = fs.createWriteStream(savePath);
+        const archive = archiver('zip', { 
           zlib: { level: 9 } // 设置压缩级别
         });
         
         output.on('close', () => {
           try {
-            // 读取压缩包内容
-            const zipContent = fs.readFileSync(zipPath);
+            console.log(`rrwebPlayer目录已成功压缩到: ${savePath}`);
             
-            // 将压缩包保存到用户指定的路径
-            fs.writeFileSync(savePath, zipContent);
-            
-            // 清理临时文件
-            fs.unlinkSync(jsFilePath);
-            fs.unlinkSync(zipPath);
-            // fs.rmdirSync(tempDir);
+            // 下载成功后删除生成的js文件
+            if (fs.existsSync(jsFilePath)) {
+              fs.unlinkSync(jsFilePath);
+              console.log(`已删除生成的JS文件: ${jsFilePath}`);
+            }
             
             resolve({ success: true, filePath: savePath });
           } catch (error) {
@@ -172,7 +168,8 @@ fs.promises.readdir(path.join(process.env.VITE_PUBLIC, 'rrwebPlayer'))
         });
         
         archive.pipe(output);
-        archive.file(jsFilePath, { name: fileName });
+        // 将整个rrwebPlayer目录添加到压缩包中
+        archive.directory(rrwebPlayerDir, 'rrwebPlayer');
         archive.finalize();
       } catch (error) {
         reject(error);
