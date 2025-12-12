@@ -25,8 +25,8 @@ export const asyncRouterList: Array<RouteRecordRaw> = [...routeModuleList];
 // 存放固定的路由
 const defaultRouterList: Array<RouteRecordRaw> = [
   {
-    path: '/login',
-    name: 'login',
+    path: '/logins',
+    name: 'logins',
     component: () => import('@/pages/login/index.vue'),
   },
   {

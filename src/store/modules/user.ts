@@ -4,6 +4,13 @@ import { store, usePermissionStore } from '@/store';
 
 const InitUserInfo  =  {
   roles: [],
+  userInfo: {
+    beeId: '',
+    userId: '',
+    token: '',
+    userid: '',
+    loginName: '',
+  }
 };
 
 export const useUserStore = defineStore('user', {
@@ -17,6 +24,12 @@ export const useUserStore = defineStore('user', {
     },
   },
   actions: {
+    async resetUserInfo() {
+      this.userInfo = { ...InitUserInfo };
+    },
+    async updateUserInfo(userInfo: Record<keyof typeof InitUserInfo['userInfo'], string>) {
+      this.userInfo = { userInfo: { ...userInfo }, roles: [] };
+    },
     async login(userInfo: Record<string, unknown>) {
       const mockLogin = async (userInfo: Record<string, unknown>) => {
         // 登录请求流程

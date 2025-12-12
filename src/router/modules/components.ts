@@ -36,10 +36,10 @@ export default [{
 		}
 	},
 	{
-        path: 'download',
-        name: 'download',
-        component: () => import('@/pages/download/index.vue'),
-        meta: { title: 'rrweb文件下载' },
-      },
+    path: 'download',
+    name: 'download',
+    component: () => import('@/pages/download/index.vue'),
+    meta: { title: 'rrweb文件下载' },
+  },
 ]
 }]

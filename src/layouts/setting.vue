@@ -95,6 +95,10 @@
         <p>请复制后手动修改配置文件: /src/config/style.ts</p>
         <t-button theme="primary" variant="text" @click="handleCopy"> 复制配置项 </t-button>
       </div> -->
+      <div class="setting-info">
+        <p>登录状态：{{ userStore.userInfo.userInfo?.userId ? (userStore.userInfo.userInfo?.loginName || '') + '---已登录' : '未登录' }}</p>
+        <t-button theme="primary" variant="text" @click="handleLogin"> {{ userStore.userInfo.userInfo?.userId ? '退出登录' : '去登录' }} </t-button>
+      </div>
     </div>
   </t-drawer>
 </template>
@@ -103,9 +107,10 @@ import { ref, computed, onMounted, watchEffect } from 'vue';
 // import { MessagePlugin } from 'tdesign-vue-next';
 import type { PopupVisibleChangeContext } from 'tdesign-vue-next';
 import { Color } from 'tvision-color';
+import { useRouter } from 'vue-router';
 // import useClipboard from 'vue-clipboard3';
 
-import { useSettingStore } from '@/store';
+import { useSettingStore, useUserStore } from '@/store';
 import Thumbnail from '@/components/thumbnail/index.vue';
 import ColorContainer from '@/components/color/index.vue';
 
@@ -117,6 +122,7 @@ import SettingLightIcon from '@/assets/assets-setting-light.svg';
 import SettingAutoIcon from '@/assets/assets-setting-auto.svg';
 
 const settingStore = useSettingStore();
+const userStore = useUserStore();
 
 const LAYOUT_OPTION = ['side', 'top', 'mix'];
 const COLOR_OPTIONS = ['default', 'cyan', 'green', 'yellow', 'orange', 'red', 'pink', 'purple', 'dynamic'];
@@ -174,6 +180,14 @@ onMounted(() => {
 const onPopupVisibleChange = (visible: boolean, context: PopupVisibleChangeContext) => {
   if (!visible && context.trigger === 'document') {
     isColoPickerDisplay.value = visible;
+  }
+};
+const router = useRouter();
+const handleLogin = () => {
+  const userStore = useUserStore();
+  if (userStore.userInfo) {
+    userStore.resetUserInfo();
+    router.replace({ path: '/logins' });
   }
 };
 

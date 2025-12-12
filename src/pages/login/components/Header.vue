@@ -14,7 +14,8 @@
 
 <script setup lang="ts">
 import LogoFullIcon from '@/assets/logo-full.svg';
-import { useSettingStore } from '@/store';
+import { useSettingStore, useUserStore } from '@/store';
+import { useRouter } from 'vue-router';
 
 const settingStore = useSettingStore();
 const toggleSettingPanel = () => {
@@ -23,8 +24,14 @@ const toggleSettingPanel = () => {
   });
 };
 
+const router = useRouter();
 const navToHelper = () => {
-  window.open('');
+  const userStore = useUserStore();
+  if (userStore.userInfo) {
+    userStore.updateUserInfo({});
+  } else {
+    router.replace({ name: '/login' });
+  }
 };
 </script>
 

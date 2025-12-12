@@ -1,5 +1,4 @@
 import { ipcRenderer, contextBridge } from 'electron'
-import axios from 'axios'
 
 // --------- Expose some API to the Renderer process ---------
 contextBridge.exposeInMainWorld('ipcRenderer', {
@@ -45,52 +44,12 @@ contextBridge.exposeInMainWorld('ipcRenderer', {
   
   // 网络请求API
   http: {
-    get: async (url: string, config?: any) => {
-      try {
-        const response = await axios.get(url, config)
-        return response.data
-      } catch (error) {
-        console.error('HTTP GET请求失败:', error)
-        throw error
-      }
-    },
-    post: async (url: string, data?: any, config?: any) => {
-      try {
-        const response = await axios.post(url, data, config)
-        return response.data
-      } catch (error) {
-        console.error('HTTP POST请求失败:', error)
-        throw error
-      }
-    },
-    put: async (url: string, data?: any, config?: any) => {
-      try {
-        const response = await axios.put(url, data, config)
-        return response.data
-      } catch (error) {
-        console.error('HTTP PUT请求失败:', error)
-        throw error
-      }
-    },
-    delete: async (url: string, config?: any) => {
-      try {
-        const response = await axios.delete(url, config)
-        return response.data
-      } catch (error) {
-        console.error('HTTP DELETE请求失败:', error)
-        throw error
-      }
-    },
+    get: (url: string, config?: any) => ipcRenderer.invoke('http:get', { url, config }),
+    post: (url: string, data?: any, config?: any) => ipcRenderer.invoke('http:post', { url, data, config }),
+    put: (url: string, data?: any, config?: any) => ipcRenderer.invoke('http:put', { url, data, config }),
+    delete: (url: string, config?: any) => ipcRenderer.invoke('http:delete', { url, config }),
     // 通用请求方法
-    request: async (config: any) => {
-      try {
-        const response = await axios.request(config)
-        return response.data
-      } catch (error) {
-        console.error('HTTP请求失败:', error)
-        throw error
-      }
-    }
+    request: (config: any) => ipcRenderer.invoke('http:request', config),
   },
   
 

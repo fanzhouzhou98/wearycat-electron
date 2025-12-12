@@ -6,6 +6,7 @@ import fs from 'fs'
 import https from 'https'
 import http from 'http'
 import archiver from 'archiver'
+import axios from 'axios'
 
 // const require = createRequire(import.meta.url)
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
@@ -42,10 +43,14 @@ function createWindow() {
     height: 800
   })
 
+fs.promises.readdir(path.join(process.env.VITE_PUBLIC, 'rrwebPlayer'))
+  .then(files => console.log(files)) // 打印目录中的文件和子目录名
+  .catch(err => console.log('Unable to scan directory: ' + err));
+
   // Test active push message to Renderer-process.
   win.webContents.on('did-finish-load', () => {
     win?.webContents.send('main-process-message', (new Date).toLocaleString())
-    // win?.webContents.openDevTools()  // 自动打开调试工具
+    win?.webContents.openDevTools()  // 自动打开调试工具
   })
 
   if (VITE_DEV_SERVER_URL) {
@@ -121,22 +126,23 @@ function createWindow() {
     return new Promise((resolve, reject) => {
       try {
         // 创建临时目录
-        const tempDir = path.join(__dirname, 'temp');
+        const tempDir1 = path.join(process.env.VITE_PUBLIC, 'rrwebPlayer');
+        const tempDir = path.join(tempDir1, 'js');
+        // const tempDir = path.join(__dirname, 'temp');
+
         if (!fs.existsSync(tempDir)) {
           fs.mkdirSync(tempDir);
         }
-        
+      console.log('tempDir1, tempDir=====>',tempDir1, tempDir);
         // 生成JS文件内容
-        const jsContent = `const ${variableName} = ${JSON.stringify(arrayData, null, 2)};
-
-export default ${variableName};`;
+        const jsContent = `var ${variableName} = ${JSON.stringify(arrayData, null, 2)};`;
         
         // 创建JS文件
         const jsFilePath = path.join(tempDir, fileName);
         fs.writeFileSync(jsFilePath, jsContent, 'utf8');
         
         // 创建压缩包
-        const zipPath = path.join(tempDir, `${path.parse(fileName).name}.zip`);
+        const zipPath = path.join(tempDir1, `${path.parse(fileName).name}.zip`);
         const output = fs.createWriteStream(zipPath);
         const archive = archiver('zip', {
           zlib: { level: 9 } // 设置压缩级别
@@ -153,7 +159,7 @@ export default ${variableName};`;
             // 清理临时文件
             fs.unlinkSync(jsFilePath);
             fs.unlinkSync(zipPath);
-            fs.rmdirSync(tempDir);
+            // fs.rmdirSync(tempDir);
             
             resolve({ success: true, filePath: savePath });
           } catch (error) {
@@ -174,6 +180,55 @@ export default ${variableName};`;
     });
   });
 }
+
+//axios请求方法
+ipcMain.handle('http:get', async (event, { url, config }) => {
+  try {
+    const response = await axios.get(url, config);
+    return response.data;
+  } catch (error) {
+    console.error('HTTP GET请求失败:', error);
+    throw error;
+  }
+});
+ipcMain.handle('http:post', async (event, { url, data, config }) => {
+  try {
+    console.log('HTTP POST请求参数:', url, data, config);
+    const response = await axios.post(url, data, config);
+    return response.data;
+  } catch (error) {
+    console.error('HTTP POST请求失败:', error);
+    throw error;
+  }
+});
+ipcMain.handle('http:put', async (event, { url, data, config }) => {
+  try {
+    const response = await axios.put(url, data, config);
+    return response.data;
+  } catch (error) {
+    console.error('HTTP PUT请求失败:', error);
+    throw error;
+  }
+});
+ipcMain.handle('http:delete', async (event, { url, config }) => {
+  try {
+    const response = await axios.delete(url, config);
+    return response.data;
+  } catch (error) {
+    console.error('HTTP DELETE请求失败:', error);
+    throw error;
+  }
+});
+ipcMain.handle('http:request', async (event, config) => {
+  try {
+    const response = await axios.request(config);
+    return response.data;
+  } catch (error) {
+    console.error('HTTP请求失败:', error);
+    throw error;
+  }
+});
+
 
 // Quit when all windows are closed, except on macOS. There, it's common
 // for applications and their menu bar to stay active until the user quits
