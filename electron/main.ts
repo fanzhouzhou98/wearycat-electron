@@ -1,7 +1,11 @@
-import { app, BrowserWindow, Menu, ipcMain } from 'electron'
+import { app, BrowserWindow, Menu, ipcMain, dialog } from 'electron'
 // import { createRequire } from 'node:module'
 import { fileURLToPath } from 'node:url'
 import path from 'node:path'
+import fs from 'fs'
+import https from 'https'
+import http from 'http'
+import archiver from 'archiver'
 
 // const require = createRequire(import.meta.url)
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
@@ -60,6 +64,115 @@ function createWindow() {
       : win?.maximize()
     if (action === 'close') win?.close()
   })
+
+  // 添加下载功能的IPC处理
+  ipcMain.handle('download:select-save-path', async (_, defaultFileName) => {
+    const result = await dialog.showSaveDialog({
+      title: '选择保存路径',
+      defaultPath: defaultFileName || 'download',
+      filters: [
+        { name: '所有文件', extensions: ['*'] }
+      ]
+    });
+    return result;
+  });
+
+  ipcMain.handle('download:download-file', async (event, { fileUrl, savePath }) => {
+    return new Promise((resolve, reject) => {
+      try {
+        // 确定使用http还是https模块
+        const protocol = fileUrl.startsWith('https') ? https : http;
+        
+        // 创建请求
+        const request = protocol.get(fileUrl, (response) => {
+          const totalBytes = parseInt(response.headers['content-length'] || '0');
+          let receivedBytes = 0;
+          
+          // 创建可写流
+          const fileStream = fs.createWriteStream(savePath);
+          
+          response.on('data', (chunk) => {
+            receivedBytes += chunk.length;
+            const progress = Math.round((receivedBytes / totalBytes) * 100);
+            // 发送进度更新
+            event.sender.send('download:progress', progress);
+            fileStream.write(chunk);
+          });
+          
+          response.on('end', () => {
+            fileStream.end();
+            resolve({ success: true, filePath: savePath });
+          });
+        });
+        
+        request.on('error', (error) => {
+          reject(error);
+        });
+        
+        request.end();
+      } catch (error) {
+        reject(error);
+      }
+    });
+  });
+
+  // 数组转JS文件并压缩下载
+  ipcMain.handle('download:array-to-js-zip', async (event, { arrayData, variableName, fileName, savePath }) => {
+    return new Promise((resolve, reject) => {
+      try {
+        // 创建临时目录
+        const tempDir = path.join(__dirname, 'temp');
+        if (!fs.existsSync(tempDir)) {
+          fs.mkdirSync(tempDir);
+        }
+        
+        // 生成JS文件内容
+        const jsContent = `const ${variableName} = ${JSON.stringify(arrayData, null, 2)};
+
+export default ${variableName};`;
+        
+        // 创建JS文件
+        const jsFilePath = path.join(tempDir, fileName);
+        fs.writeFileSync(jsFilePath, jsContent, 'utf8');
+        
+        // 创建压缩包
+        const zipPath = path.join(tempDir, `${path.parse(fileName).name}.zip`);
+        const output = fs.createWriteStream(zipPath);
+        const archive = archiver('zip', {
+          zlib: { level: 9 } // 设置压缩级别
+        });
+        
+        output.on('close', () => {
+          try {
+            // 读取压缩包内容
+            const zipContent = fs.readFileSync(zipPath);
+            
+            // 将压缩包保存到用户指定的路径
+            fs.writeFileSync(savePath, zipContent);
+            
+            // 清理临时文件
+            fs.unlinkSync(jsFilePath);
+            fs.unlinkSync(zipPath);
+            fs.rmdirSync(tempDir);
+            
+            resolve({ success: true, filePath: savePath });
+          } catch (error) {
+            reject(error);
+          }
+        });
+        
+        archive.on('error', (error) => {
+          reject(error);
+        });
+        
+        archive.pipe(output);
+        archive.file(jsFilePath, { name: fileName });
+        archive.finalize();
+      } catch (error) {
+        reject(error);
+      }
+    });
+  });
 }
 
 // Quit when all windows are closed, except on macOS. There, it's common
