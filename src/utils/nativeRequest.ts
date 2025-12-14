@@ -2,6 +2,7 @@ import { useUserStore } from '@/store';
 import { MessagePlugin } from 'tdesign-vue-next';
 export const postRequest = async (url: string, data?: any, config?: any) => {
   const userStore = useUserStore();
+  url = userStore.userInfo.baseUrl + url;
   if (userStore.userInfo.userInfo) {
     config = {
       ...config,

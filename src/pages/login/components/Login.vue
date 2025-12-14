@@ -1,13 +1,6 @@
 <template>
-  <t-form
-    ref="form"
-    :class="['item-container', `login-${type}`]"
-    :data="formData"
-    :rules="FORM_RULES"
-    label-width="0"
-    @submit="onSubmit"
-  >
-    <template v-if="type == 'password'">
+  <t-form ref="form" :class="['item-container', `login-password`]" :data="formData" :rules="FORM_RULES" label-width="0"
+    @submit="onSubmit">
       <t-form-item name="account">
         <t-input v-model="formData.account" size="large" placeholder="请输入账号：">
           <template #prefix-icon>
@@ -17,13 +10,8 @@
       </t-form-item>
 
       <t-form-item name="password">
-        <t-input
-          v-model="formData.password"
-          size="large"
-          :type="showPsw ? 'text' : 'password'"
-          clearable
-          placeholder="请输入登录密码："
-        >
+        <t-input v-model="formData.password" size="large" :type="showPsw ? 'text' : 'password'" clearable
+          placeholder="请输入登录密码：">
           <template #prefix-icon>
             <t-icon name="lock-on" />
           </template>
@@ -33,118 +21,68 @@
         </t-input>
       </t-form-item>
 
-      <!-- <div class="check-container remember-pwd">
-        <t-checkbox>记住账号</t-checkbox>
-        <span class="tip">忘记账号？</span>
-      </div> -->
-    </template>
-
-    <!-- 扫码登陆 -->
-    <!-- <template v-else-if="type == 'qrcode'">
-      <div class="tip-container">
-        <span class="tip">请使用微信扫一扫登录</span>
-        <span class="refresh">刷新 <t-icon name="refresh" /> </span>
-      </div>
-      <qrcode-vue value="" :size="192" level="H" />
-    </template> -->
-
-    <!-- 手机号登陆 -->
-    <!-- <template v-else>
-      <t-form-item name="phone">
-        <t-input v-model="formData.phone" size="large" placeholder="请输入手机号码">
-          <template #prefix-icon>
-            <t-icon name="mobile" />
-          </template>
-        </t-input>
-      </t-form-item>
-
-      <t-form-item class="verification-code" name="verifyCode">
-        <t-input v-model="formData.verifyCode" size="large" placeholder="请输入验证码" />
-        <t-button variant="outline" :disabled="countDown > 0" @click="sendCode">
-          {{ countDown == 0 ? '发送验证码' : `${countDown}秒后可重发` }}
-        </t-button>
-      </t-form-item>
-    </template> -->
-
-    <t-form-item v-if="type !== 'qrcode'" class="btn-container">
+    <t-form-item class="btn-container">
       <t-button block size="large" type="submit"> 登录 </t-button>
     </t-form-item>
 
     <div class="switch-container">
-      <span class="tip" @click="switchType('password')">使用账号密码登录</span>
-      <!-- <span v-if="type !== 'qrcode'" class="tip" @click="switchType('qrcode')">使用微信扫码登录</span>
-      <span v-if="type !== 'phone'" class="tip" @click="switchType('phone')">使用手机号登录</span> -->
+      <span v-if="type !== 'prod'" class="tip" @click="switchType('prod')">切换到正式环境</span>
+      <span v-if="type !== 'uat'" class="tip" @click="switchType('uat')">切换到测试环境</span>
     </div>
   </t-form>
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue';
-import { useRoute, useRouter } from 'vue-router';
-import QrcodeVue from 'qrcode.vue';
+import { ref, defineEmits } from 'vue';
+import { useRouter } from 'vue-router';
 import { MessagePlugin } from 'tdesign-vue-next';
-import type { FormInstanceFunctions, FormRule } from 'tdesign-vue-next';
-import { useCounter } from '@/hooks';
+import type { FormRule } from 'tdesign-vue-next';
 import { useUserStore } from '@/store';
 import { JSEncrypt } from 'jsencrypt'
-
+import { postRequest } from '@/utils/nativeRequest';
 const userStore = useUserStore();
+const emit = defineEmits(['switchEnv']);
 
 const INITIAL_DATA = {
-  // phone: '',
   account: 'mazhijiang',
   password: 'Ma12345678',
-  // verifyCode: '',
-  // checked: false,
 };
 
 const FORM_RULES: Record<string, FormRule[]> = {
-  // phone: [{ required: true, message: '手机号必填', type: 'error' }],
   account: [{ required: true, message: '账号必填', type: 'error' }],
   password: [{ required: true, message: '密码必填', type: 'error' }],
-  // verifyCode: [{ required: true, message: '验证码必填', type: 'error' }],
 };
 
-const type = ref('password');
+const type = ref('uat');
 
-const form = ref<FormInstanceFunctions>();
 const formData = ref({ ...INITIAL_DATA });
 const showPsw = ref(false);
 
-const [countDown, handleCounter] = useCounter();
-
 const switchType = (val: string) => {
   type.value = val;
+  emit('switchEnv', val);
+  if (val === 'prod') {
+      userStore.setBaseUrl('https://mall.oldmutual-chnenergy.com')
+  } else {
+    userStore.setBaseUrl('https://t-mendix.oldmutual-chnenergy.com')
+  }
 };
 
 const router = useRouter();
-const route = useRoute();
-
-/**
- * 发送验证码
- */
-const sendCode = () => {
-  //@ts-ignore
-  form.value.validate({ fields: ['phone'] }).then((e) => {
-    if (e === true) {
-      handleCounter();
-    }
-  });
-};
-    // RSA加密
-    const setEncrypt = (msg)  => {
-      // 公钥
-      const key = 'MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQCKbZqPP8xy3+dDmG2o10HHx02cilY6m0q79yOa75HN+Vj+DKGkvnneHWiRR9JxNgFJY7ncUkrlQuExXxbxqK66QGwwfLUvnOtf1qPrx/rVXdKOA9dPDfGFQJ0NgH7QsLj1WnHaB5zkPle5SFLlqKIN8Sdo0xaQ1kVHSKGTUkkT8wIDAQAB'
-      const jsencrypt = new JSEncrypt()
-      jsencrypt.setPublicKey(key)
-      return jsencrypt.encrypt(msg)
-    }
+// RSA加密
+const setEncrypt = (msg: string) => {
+  // 公钥
+  const key = 'MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQCKbZqPP8xy3+dDmG2o10HHx02cilY6m0q79yOa75HN+Vj+DKGkvnneHWiRR9JxNgFJY7ncUkrlQuExXxbxqK66QGwwfLUvnOtf1qPrx/rVXdKOA9dPDfGFQJ0NgH7QsLj1WnHaB5zkPle5SFLlqKIN8Sdo0xaQ1kVHSKGTUkkT8wIDAQAB'
+  const jsencrypt = new JSEncrypt()
+  jsencrypt.setPublicKey(key)
+  return jsencrypt.encrypt(msg)
+}
 // 为 validateResult 显式指定类型，避免隐式 any 类型问题
 const onSubmit = async ({ validateResult }: { validateResult: boolean | Record<string, any> }) => {
   console.log('登录提交：：：=》》', validateResult, formData.value);
   if (validateResult === true) {
     try {
-      let data = await window.ipcRenderer.http.post('https://t-mendix.oldmutual-chnenergy.com/product/backend/bee-system-service/system/login', {
+      let data = await postRequest('/product/backend/bee-system-service/system/login', {
         data: {
           userName: formData.value.account,
           password: setEncrypt(formData.value.password),
@@ -154,15 +92,12 @@ const onSubmit = async ({ validateResult }: { validateResult: boolean | Record<s
       if (data.code === 1) {
         await userStore.updateUserInfo(data.result);
         MessagePlugin.success('登陆成功');
-        // const redirect = route.query.redirect as string;
-        // const redirectUrl = redirect ? decodeURIComponent(redirect) : '/dashboard';
         router.replace({ path: '/' });
       } else {
         MessagePlugin.error(data.message || '登录失败');
       }
-    } catch (e) {
+    } catch (e: any) {
       console.log(e);
-      //@ts-ignore
       MessagePlugin.error(e.message);
     }
   }

@@ -5,12 +5,12 @@
         <div class="form-step-container">
           <t-card :title="'投保回溯数据压缩下载'" :bordered="false">
             <t-form ref="arrayForm" :data="arrayDownloadForm" :layout="'vertical'">
-              <t-form-item label="流水号" name="">
+              <t-form-item label="流水号" name="tradeNo">
                 <t-input v-model="arrayDownloadForm.tradeNo" placeholder="请输入流水号" :maxcharacter="50"/>
               </t-form-item>
               <t-form-item>
                 <t-space size="small">
-                    <t-button type="primary" @click="downloadArrayAsJsZip" :loading="arrayDownloading">生成并下载</t-button>
+                    <t-button type="primary" @click="downloadArrayAsJsZip" :loading="arrayDownloading">打包并下载</t-button>
                     <t-button @click="resetArrayForm">重置</t-button>
                 </t-space>
               </t-form-item>
@@ -74,7 +74,7 @@ const downloadArrayAsJsZip = async () => {
     return;
   }
   arrayDownloading.value = true;
-  let data = await postRequest('https://t-mendix.oldmutual-chnenergy.com/product/backend/trade-service/trade/rwebData/getData', {
+  let data = await postRequest('/product/backend/trade-service/trade/rwebData/getData', {
     tradeNo: tradeNo,
     subId: tradeNo
 }).catch((error) => {
@@ -93,13 +93,13 @@ if (data.code === 1) {
       return id !== tradeNo
     })
     for (let subId of subIdArr) {
-      let subData = await postRequest('https://t-mendix.oldmutual-chnenergy.com/product/backend/trade-service/trade/rwebData/getData', {
+      let subData = await postRequest('/product/backend/trade-service/trade/rwebData/getData', {
         tradeNo: tradeNo,
         subId: subId
       }).catch((error) => {
-        console.error('下载子数组数据失败:', error);
+        console.error('下载子流程数据失败:', error);
         arrayDownloading.value = false;
-        MessagePlugin.warning('下载子数组数据失败');
+        MessagePlugin.warning('下载子流程数据失败');
       });
       if (subData.code === 1) {
         arrayData.push(JSON.parse(subData.result.data))
@@ -125,7 +125,7 @@ const arrayToJsZip = async (arrayData: any[], savePath: string) => {
       savePath: savePath
     });
     if (response.success) {
-      MessagePlugin.success('数据下载生成成功');
+      MessagePlugin.success('数据打包下载成功!');
       console.log('压缩包生成成功', response.filePath);
     } else {
       MessagePlugin.error('压缩包生成失败');

@@ -185,6 +185,7 @@ const onPopupVisibleChange = (visible: boolean, context: PopupVisibleChangeConte
 const router = useRouter();
 const handleLogin = () => {
   const userStore = useUserStore();
+  handleCloseDrawer();
   if (userStore.userInfo) {
     userStore.resetUserInfo();
     router.replace({ path: '/logins' });

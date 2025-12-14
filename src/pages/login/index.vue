@@ -4,7 +4,7 @@
 
     <div class="login-container">
       <div class="title-container">
-        <h1 class="title margin-no">登录到</h1>
+        <h1 class="title margin-no">登录到{{ env === 'prod' ? '正式环境' : '测试环境' }}</h1>
         <h1 class="title"></h1>
         <!-- <div class="sub-title">
           <p class="tip">{{ type == 'register' ? '已有账号?' : '没有账号吗?' }}</p>
@@ -14,7 +14,7 @@
         </div> -->
       </div>
 
-      <login v-if="type === 'login'" />
+      <login v-if="type === 'login'" @switchType="switchEnv" />
       <register v-else @register-success="switchType('login')" />
       <tdesign-setting />
     </div>
@@ -36,6 +36,10 @@ import LoginHeader from './components/Header.vue';
 import TdesignSetting from '@/layouts/setting.vue';
 
 const type = ref('login');
+const env = ref('uat');
+const switchEnv = (val: string) => {
+  env.value = val;
+};
 const switchType = (val: string) => {
   type.value = val;
 };

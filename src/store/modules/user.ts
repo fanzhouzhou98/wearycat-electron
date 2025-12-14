@@ -10,7 +10,8 @@ const InitUserInfo  =  {
     token: '',
     userid: '',
     loginName: '',
-  }
+  },
+  baseUrl: 'https://t-mendix.oldmutual-chnenergy.com',
 };
 
 export const useUserStore = defineStore('user', {
@@ -28,7 +29,10 @@ export const useUserStore = defineStore('user', {
       this.userInfo = { ...InitUserInfo };
     },
     async updateUserInfo(userInfo: Record<keyof typeof InitUserInfo['userInfo'], string>) {
-      this.userInfo = { userInfo: { ...userInfo }, roles: [] };
+      this.userInfo.userInfo = { ...userInfo };
+    },
+    async setBaseUrl(baseUrl: string) {
+      this.userInfo.baseUrl = baseUrl;
     },
     async login(userInfo: Record<string, unknown>) {
       const mockLogin = async (userInfo: Record<string, unknown>) => {
